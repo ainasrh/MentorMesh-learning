@@ -1,0 +1,87 @@
+
+
+services:
+# database
+  db:
+    image: postgres:latest   # Use the official PostgreSQL image
+    container_name: postgres_db
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}  
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Store data persistently
+    ports:
+      - "5432:5432"           # Expose port for local access to the DB
+    networks:
+      - mentormesh
+    healthcheck:  # Check DB is ready
+      test: ["CMD-SHELL", "pg_isready -U MeshAdmin -d MentorMesh"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period : 30s  
+      
+
+  userservices:
+    build:
+      context: ./user_services
+    container_name: user_services
+    command: bash -c "
+      while ! pg_isready -h db -U MeshAdmin -d MentorMesh -t 1; do
+        echo 'Waiting for database...';
+        sleep 2;
+      done;
+      python manage.py makemigrations --noinput &&
+      python manage.py migrate --noinput &&
+      python manage.py runserver 0.0.0.0:8001
+      "
+
+    volumes:
+      - ./user_services:/app 
+    ports:
+      - "8001:8001"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    networks:
+      - mentormesh
+
+  # Course Service
+  course_service:
+    build:
+      context: ./course_service
+    container_name: course_service
+    command: bash -c "
+      while ! pg_isready -h db -U MeshAdmin -d MentorMesh -t 1; do
+        echo 'Waiting for database...';
+        sleep 2;
+      done;
+      python manage.py makemigrations --noinput &&
+      python manage.py migrate --noinput &&
+      python manage.py runserver 0.0.0.0:8002
+      "
+    volumes:
+      - ./course_service:/app
+      - ./media:/app/media
+    ports:
+      - '8002:8002'
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    networks: 
+      - mentormesh
+
+
+
+volumes:
+  postgres_data:
+  
+networks:
+  mentormesh:
