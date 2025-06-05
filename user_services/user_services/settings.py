@@ -27,9 +27,9 @@ SECRET_KEY = 'django-insecure-7$hfmeo-33(d8q8!@y&)alk6mimi9@sa^k)1(&4g6^(v+6%vfq
 AUTH_USER_MODEL = 'users.User'  # custom User Model 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost").split(",")
 
 
 # Application definition
@@ -61,7 +61,7 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173"
 ]
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOW_ALL_ORIGINS = True
 CSRF_TRUSTED_ORIGINS = ['http://localhost:5173']
 
 
@@ -172,7 +172,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('EMAIL_USER')      
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_USER')    
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASSWORD')    
 DEFAULT_FROM_EMAIL=EMAIL_HOST_USER
 
 
@@ -181,12 +181,13 @@ DEFAULT_FROM_EMAIL=EMAIL_HOST_USER
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=4),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=5),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=2),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_BLACKLIST_ENABLED': True,
+    'SIGNING_KEY':os.getenv('JWT_SECRET_KEY')
 }
 
 
@@ -205,3 +206,8 @@ LOGGING = {
         'level': 'DEBUG',  # Use INFO or ERROR in production
     },
 }
+
+
+
+
+

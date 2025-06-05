@@ -116,4 +116,15 @@ class ChangePasswordAPI(APIView):
             return Response({'message':'passwoed changed succesfully'},status=status.HTTP_200_OK)
         return Response(serialized.errors,status=status.HTTP_400_BAD_REQUEST)
         
+
+class ALLUsersAPI(APIView):
+    def get(self,request):
+
+        try:
+
+            users=User.objects.all()
+            serialized=UserSerializer(users,many=True)
+            return Response(serialized.data,status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'error':'product not found'},status=status.HTTP_404_NOT_FOUND)
         

@@ -22,21 +22,59 @@ services:
       interval: 5s
       timeout: 10s
       retries: 10
-      start_period : 30s  
-      
+      start_period: 30s  
+  
+  # NGINX configure .taking nginx team providing image alpine
+  
+  nginx:
+    image: nginx:alpine
+    container_name: api-gateway
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - userservices
+      - course_service
+    networks:
+      - mentormesh
 
+
+# Rabbit mq configuration
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5  
+    
+    networks:
+      - mentormesh
+
+
+      
+  # User Services 
   userservices:
     build:
       context: ./user_services
     container_name: user_services
     command: bash -c "
-      while ! pg_isready -h db -U MeshAdmin -d MentorMesh -t 1; do
-        echo 'Waiting for database...';
-        sleep 2;
-      done;
-      python manage.py makemigrations --noinput &&
-      python manage.py migrate --noinput &&
-      python manage.py runserver 0.0.0.0:8001
+        while ! pg_isready -h db -U MeshAdmin -d MentorMesh -t 1; do
+          echo 'Waiting for database...';
+          sleep 2;
+        done;
+        python manage.py migrate --noinput &&
+        python manage.py runserver 0.0.0.0:8001
       "
 
     volumes:
@@ -45,6 +83,8 @@ services:
       - "8001:8001"
     depends_on:
       db:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     env_file:
       - .env
@@ -69,14 +109,18 @@ services:
       - ./course_service:/app
       - ./media:/app/media
     ports:
-      - '8002:8002'
+      - "8002:8002"
     depends_on:
       db:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     env_file:
       - .env
     networks: 
       - mentormesh
+    environment:
+    - PYTHONPATH=/app
 
 
 
@@ -85,3 +129,4 @@ volumes:
   
 networks:
   mentormesh:
+    driver: bridge

@@ -2,13 +2,19 @@ from rest_framework import serializers
 from .models import *
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken 
+from users.utils.jwt_utils import generate_acces_token,generate_refresh_token
 from django.contrib.auth import get_user_model
 import logging
+
 
 logger=logging.getLogger(__name__)
 
 
+class UserSerializer(serializers.ModelSerializer):
 
+    class Meta:
+        model = User
+        exclude = ['password', 'is_superuser', 'last_login']
 
 class RegisterSerializer(serializers.ModelSerializer):
 
@@ -45,8 +51,8 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError({'error':"Email is not verified"})
         
 
-        refresh_token=RefreshToken.for_user(user)
-        access_token=str(refresh_token.access_token)
+        refresh_token=generate_refresh_token(user)
+        access_token=generate_acces_token(user)
 
 
         return (
@@ -56,7 +62,7 @@ class LoginSerializer(serializers.Serializer):
                 "user_id":user.id,
                 "username":user.username,
                 "email":user.email,
-                'is_staff':user.is_staff
+                'role':user.role
             },
             "refresh_token":str(refresh_token),
             "access_token":access_token
@@ -66,7 +72,7 @@ class LoginSerializer(serializers.Serializer):
 
         
 
-        # 
+        #
         
 
 # FORGOT PASSWORD 

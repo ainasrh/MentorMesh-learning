@@ -16,8 +16,8 @@ class User(AbstractUser):
     date_joined=None
 
     role=models.CharField(max_length=155,choices=Role_Choice,default="learner")
-    avatar=models.CharField(max_length=600)
-    bio=models.TextField()
+    avatar=models.ImageField(upload_to='avatars/',null=True,blank=True,default='avatars/default_avatar.jpg')
+    bio=models.TextField(null=True, blank=True)
     created_at=models.DateTimeField(auto_now=True)
     email=models.EmailField(unique=True)
     is_email_verified=models.BooleanField(default=False)
