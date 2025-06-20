@@ -2,7 +2,8 @@ from rest_framework import serializers
 from .models import *
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken 
-from users.utils.jwt_utils import generate_acces_token,generate_refresh_token
+
+from rest_framework_simplejwt.tokens import RefreshToken     
 from django.contrib.auth import get_user_model
 import logging
 
@@ -11,10 +12,18 @@ logger=logging.getLogger(__name__)
 
 
 class UserSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = User
         exclude = ['password', 'is_superuser', 'last_login']
+
+    def get_avatar(self,obj):
+        request=self.context.get('request')
+        if obj.avatar:
+            return request.build_absolute_uri(obj.avatar.url)
+        return None
+
+
+
 
 class RegisterSerializer(serializers.ModelSerializer):
 
@@ -37,13 +46,13 @@ class LoginSerializer(serializers.Serializer):
         password=data.get("password")
         
         user=authenticate(email=email,password=password)
-        print(user)
+        
 
 
         #  check is user available with this email and password 
 
         if not user:
-            raise serializers.ValidationError({"error":'invalid username or password'})
+            raise serializers.ValidationError({"error":'invalid email or password'})
         
         # Check email is verified 
 
@@ -51,8 +60,8 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError({'error':"Email is not verified"})
         
 
-        refresh_token=generate_refresh_token(user)
-        access_token=generate_acces_token(user)
+        refresh = RefreshToken.for_user(user)
+        
 
 
         return (
@@ -64,8 +73,8 @@ class LoginSerializer(serializers.Serializer):
                 "email":user.email,
                 'role':user.role
             },
-            "refresh_token":str(refresh_token),
-            "access_token":access_token
+            "refresh_token":str(refresh),
+            "access_token":str(refresh.access_token)
 
         }
         )

@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+from django.conf import settings
+from django.core.exceptions import ValidationError
 
 
 # Create your models here.
@@ -25,6 +27,25 @@ class User(AbstractUser):
     USERNAME_FIELD = 'email'    
     REQUIRED_FIELDS = ['username'] 
 
+class TrainerProfile(models.Model):
+                                                                                                # opposit Relation from TrainerProfile to User model
+    user=models.OneToOneField(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name="trainer_profile",limit_choices_to={"role":"trainer"}) 
+    experience = models.PositiveIntegerField(help_text="Experience in Years ", null=True,blank=True)
+    qualification = models.CharField(max_length=255,null=True,blank=True)
+    skills = models.TextField(null=True,blank=True)
+
+    def clean(self):
+        if self.user.role != "trainer":
+            raise ValidationError("Only Trainer Can Create Trainer Profile")
+        if self.experience is not None and self.experience > 50 :
+            raise ValidationError('Experience cannot exeed 50 years')
+        
+    def save(self,*args,**kwargs):
+        self.clean()
+        super().save(*args,**kwargs)
+    
+    def __str__(self):
+        return f" {self.user.email}  Trainer Profile"
 
 class PasswordResetOTP(models.Model):
     user=models.ForeignKey(User,on_delete=models.CASCADE)

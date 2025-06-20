@@ -41,7 +41,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    "users",
+    # setup custom user config for signals
+    'users.apps.UsersConfig',
+
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'rest_framework',
@@ -160,7 +162,8 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/avatars')
 
 
 
@@ -181,8 +184,8 @@ DEFAULT_FROM_EMAIL=EMAIL_HOST_USER
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=2),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=10),
+    'REFRESH_TOKEN_LIFETIME': timedelta(weeks=10),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
@@ -205,8 +208,14 @@ LOGGING = {
         'handlers': ['console'],
         'level': 'DEBUG',  # Use INFO or ERROR in production
     },
+    'loggers': {
+        'pika': {
+            'handlers': ['console'],
+            'level': 'WARNING',   # or 'ERROR' to silence even more
+            'propagate': False,
+        },
+    }
 }
-
 
 
 

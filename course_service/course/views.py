@@ -4,7 +4,8 @@ from .serializers import *
 from rest_framework import status
 from rest_framework.generics import get_object_or_404
 import logging
-from course.rpc_utils.trainer_rpc_client import TrainerRpcClient
+
+from rest_framework.parsers import MultiPartParser,FormParser
 
 
 logger=logging.getLogger(__name__)
@@ -14,46 +15,31 @@ logger=logging.getLogger(__name__)
 
 # Course APIs
 
-class CourseCreateView(APIView):
-    def post(self, request):
-        trainer_id = request.data.get('trainer_id')
 
-        if not trainer_id:
-            return Response({'error': 'Trainer ID required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            rpc = TrainerRpcClient()
-            trainer_data = rpc.call(trainer_id)
-
-            if "error" in trainer_data:
-                return Response(trainer_data, status=status.HTTP_404_NOT_FOUND)
-
-            # Continue with course creation using trainer_data
-            return Response({
-                'message': 'Trainer verified',
-                'trainer': trainer_data
-            })
-
-        except TimeoutError:
-            return Response({'error': 'Trainer service not responding'}, status=status.HTTP_504_GATEWAY_TIMEOUT)
         
 class CreateCourseAPI(APIView):
+    parser_classes = [MultiPartParser, FormParser]
     
     def post(self,request):
-        
+
+        logger.info(f"data from front {request.data}")
         serialized = courseSerializer(data=request.data,context={"request":request})
         if serialized.is_valid():
             serialized.save()
             return Response(serialized.data,status=status.HTTP_200_OK)
-        return Response({'error':'data is not valid'},status=status.HTTP_400_BAD_REQUEST)
+        return Response(serialized.errors, status=status.HTTP_400_BAD_REQUEST)
+
     
 
 
 
 # Course video Create
 class CourseVideoCreateAPI(APIView):
+    parser_classes = (MultiPartParser, FormParser)
     def post(self, request):
-        serializer = CourseVideoSerializer(data=request.data)
+        logger.info(f"video request data {request.data}")
+        serializer = CourseVideoSerializer(data=request.data,context={"request":request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -67,23 +53,41 @@ class CourseVideoCreateAPI(APIView):
             return Response(serialized.data,status=status.HTTP_200_OK)
         except CourseVideo.DoesNotExist:
             return Response({'error':'product not found'},status=status.HTTP_404_NOT_FOUND)
-    
+# Get courses 
+
+# trending courses
+class TrendingCourseAPI(APIView):
+    def get(self, request):
+        trending = Course.objects.filter(is_trending=True)[:3]
+        serialized = courseSerializer(trending, many=True, context={"request": request})
+        return Response(serialized.data, status=status.HTTP_200_OK)
+
+# get courses     
 class GetCourseAPI(APIView):
-    def get(self,request,pk=None):
-    
-        
+
+    def get(self,request,pk=None):       
         if pk :
             data = get_object_or_404(Course,id=pk)
-            serialized = courseSerializer(data)
+            serialized = courseSerializer(data,context={'request':request})
         else:
-            data=Course.objects.all()
+            data=Course.objects.all().order_by("id")
 
-            serialized = courseSerializer(data,many=True)
+            serialized = courseSerializer(data,many=True,context={'request':request})
 
         return Response(serialized.data,status=status.HTTP_200_OK)
 
+# get courses based on Trainer
+
+class GetCourseBasedTrainer(APIView):
+    def get(self,request):
+        data=Course.objects,filter(trainer=request.id)
+        serializer=courseSerializer(data,many=True)
+        return Response(serializer.data,status=status.HTTP_200_OK)
+
+
 class UpdateCourseAPI(APIView):
-    def put(self,request,pk):
+    def patch(self,request,pk):
+        logger.info(request.data)
         
         try:
             course_data=Course.objects.get(id=pk)
@@ -92,7 +96,7 @@ class UpdateCourseAPI(APIView):
             return Response({'error':'prodcut not found'},status=status.HTTP_404_NOT_FOUND)
         
         
-        serialized=courseSerializer(course_data,data=request.data)
+        serialized=courseSerializer(course_data,data=request.data,partial=True,context={"request":request})
 
         if serialized.is_valid():
             serialized.save()

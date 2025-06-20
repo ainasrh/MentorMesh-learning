@@ -49,8 +49,10 @@ services:
       - "15672:15672"
 
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+    # set custom creadentials
+
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
 
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
@@ -74,9 +76,11 @@ services:
           sleep 2;
         done;
         python manage.py migrate --noinput &&
-        python manage.py runserver 0.0.0.0:8001
-      "
+        python manage.py runserver 0.0.0.0:8001 &
+        python users/rabbitmq_consumer.py &
+        wait -n
 
+      "
     volumes:
       - ./user_services:/app 
     ports:

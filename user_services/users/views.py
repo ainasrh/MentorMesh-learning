@@ -9,6 +9,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from random import randint
 from rest_framework.permissions import IsAuthenticated
+
 import logging
 # Create your views here.
 
@@ -19,6 +20,7 @@ class RegisterApi(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
+            
             user=serializer.instance
             print('user ',user)
 
@@ -116,10 +118,9 @@ class ChangePasswordAPI(APIView):
             return Response({'message':'passwoed changed succesfully'},status=status.HTTP_200_OK)
         return Response(serialized.errors,status=status.HTTP_400_BAD_REQUEST)
         
-
+# Fetch users 
 class ALLUsersAPI(APIView):
     def get(self,request):
-
         try:
 
             users=User.objects.all()
@@ -128,3 +129,28 @@ class ALLUsersAPI(APIView):
         except User.DoesNotExist:
             return Response({'error':'product not found'},status=status.HTTP_404_NOT_FOUND)
         
+
+# get logged user data
+class MeAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        logger.info(f"user {request.user}")
+        user_id = request.user.id
+        user_details = User.objects.get(id=user_id)
+        serializer = UserSerializer(user_details,context={"request":request})
+        return Response(serializer.data)
+    
+
+class UpdateLoggedUserAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        user = request.user
+
+        serializer = UserSerializer(user, data=request.data, partial=True)  
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

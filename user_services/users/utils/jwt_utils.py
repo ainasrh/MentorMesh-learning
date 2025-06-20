@@ -7,7 +7,7 @@ algorthm='HS256'
 
 def generate_acces_token(user):
     payload= {
-        'id':user.id,
+        'user_id':user.id,
         'username':user.username,
         'email':user.email,
         'role':user.role,
@@ -20,7 +20,7 @@ def generate_acces_token(user):
 
 def generate_refresh_token(user):
     payload = {
-        "id":user.id,
+        "user_id":user.id,
         "exp":datetime.utcnow() + settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'],
         "iat":datetime.utcnow(),
     }

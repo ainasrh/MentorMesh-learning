@@ -9,8 +9,11 @@ urlpatterns = [
     path('logout/',LogoutApi.as_view(),name="LoginAPi"),
     path('request-otp/',RequestOtpAPI.as_view(),name='request_otp'),
     path('reset-password/',ResetPasswordApi.as_view(),name='reset-password'),
+    path('users/',ALLUsersAPI.as_view(),name='all-users'),
     path('change-password',ChangePasswordAPI.as_view(),name='change-password'),
-    path('users/',ALLUsersAPI.as_view(),name='all-users')
+    path('users/me/', MeAPIView.as_view(), name='user-me'),
+    path('users/update/me/',UpdateLoggedUserAPI.as_view(),name='update-logged-user')
+
 
     
     

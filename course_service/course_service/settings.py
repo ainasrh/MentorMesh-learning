@@ -55,19 +55,12 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173"
 ]
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOW_ALL_ORIGINS = True
 CSRF_TRUSTED_ORIGINS = ['http://localhost:5173']
-
-
-CORS_ALLOW_HEADERS = [
-    "content-type",
-    "authorization",
-    "X-CSRFToken",
-]
-
 ROOT_URLCONF = 'course_service.urls'
 
 TEMPLATES = [
@@ -84,6 +77,12 @@ TEMPLATES = [
         },
     },
 ]
+
+
+# Allow up to 100MB file uploads (adjust as needed)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600   
+FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600
+
 
 WSGI_APPLICATION = 'course_service.wsgi.application'
 
@@ -168,4 +167,11 @@ LOGGING = {
         'handlers': ['console'],
         'level': 'DEBUG',  # Use INFO or ERROR in production
     },
+    'loggers': {
+        'pika': {
+            'handlers': ['console'],
+            'level': 'WARNING',   # or 'ERROR' to silence even more
+            'propagate': False,
+        },
+    }
 }
