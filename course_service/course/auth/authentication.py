@@ -27,7 +27,7 @@ class JWTAuthentication(BaseAuthentication):
         
         # create a empty object 
         user=type('User',(),{})()
-        user.id = payload.get("id")
+        user.id = payload.get("user_id")
         user.username = payload.get('username')
         user.role=payload.get('role') 
 

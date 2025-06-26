@@ -34,15 +34,15 @@ class TrainerProfile(models.Model):
     qualification = models.CharField(max_length=255,null=True,blank=True)
     skills = models.TextField(null=True,blank=True)
 
-    def clean(self):
-        if self.user.role != "trainer":
-            raise ValidationError("Only Trainer Can Create Trainer Profile")
-        if self.experience is not None and self.experience > 50 :
-            raise ValidationError('Experience cannot exeed 50 years')
+    # def clean(self):
+    #     if self.user.role != "trainer":
+    #         raise ValidationError("Only Trainer Can Create Trainer Profile")
+    #     if self.experience is not None and self.experience > 50 :
+    #         raise ValidationError('Experience cannot exeed 50 years')
         
-    def save(self,*args,**kwargs):
-        self.clean()
-        super().save(*args,**kwargs)
+    # def save(self,*args,**kwargs):
+    #     self.clean()
+    #     super().save(*args,**kwargs)
     
     def __str__(self):
         return f" {self.user.email}  Trainer Profile"

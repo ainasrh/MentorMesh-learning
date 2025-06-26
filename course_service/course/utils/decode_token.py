@@ -1,7 +1,7 @@
 import jwt
 from rest_framework.exceptions import AuthenticationFailed
 import os
-jwt_secret_key = os.getenv('JWT_SECRET_KEY','e354wfsdfsdffg')
+jwt_secret_key = os.getenv('JWT_SECRET_KEY','ZqTHcsOxFdUOYg')
 
 
 def decode_jwt_token(token):

@@ -17,8 +17,9 @@ class CourseVideoSerializer(serializers.ModelSerializer):
 
         course =validation_data.get('course')
 
-        if course.trainer !=user:
+        if course.trainer !=user.id:
             raise serializers.ValidationError({"permission_error":'you can only create video for your courses'})
+        return validation_data
         
 
 class courseSerializer(serializers.ModelSerializer):
@@ -114,3 +115,7 @@ class EnrollmentProgressSerializer(serializers.ModelSerializer):
         model=EnrollmentPartProgress
         fields = '__all__'
         read_only_fields = ['last_watched_at']
+
+
+
+# class CheckRoleAPI()

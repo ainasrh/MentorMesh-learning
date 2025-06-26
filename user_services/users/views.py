@@ -9,6 +9,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from random import randint
 from rest_framework.permissions import IsAuthenticated
+from users.courses_publisher import get_course_details
+from users.trainerEnrolled_publisher import get_enrolled_details
+from users.allCourses_Publisher import get_all_course
 
 import logging
 # Create your views here.
@@ -118,17 +121,8 @@ class ChangePasswordAPI(APIView):
             return Response({'message':'passwoed changed succesfully'},status=status.HTTP_200_OK)
         return Response(serialized.errors,status=status.HTTP_400_BAD_REQUEST)
         
-# Fetch users 
-class ALLUsersAPI(APIView):
-    def get(self,request):
-        try:
 
-            users=User.objects.all()
-            serialized=UserSerializer(users,many=True)
-            return Response(serialized.data,status=status.HTTP_200_OK)
-        except User.DoesNotExist:
-            return Response({'error':'product not found'},status=status.HTTP_404_NOT_FOUND)
-        
+
 
 # get logged user data
 class MeAPIView(APIView):
@@ -143,6 +137,7 @@ class MeAPIView(APIView):
     
 
 class UpdateLoggedUserAPI(APIView):
+
     permission_classes = [IsAuthenticated]
 
     def patch(self, request):
@@ -154,3 +149,127 @@ class UpdateLoggedUserAPI(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# Trainer Section
+
+
+
+class CreateTrainerProfile(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        logger.info(f"request data{request.data}")
+        logger.info('create trainer workin')
+        user = request.user
+        # Check is given name has any attribute Reverse realtion new second argumen
+        if hasattr(user, 'trainer_profile'):
+            return Response({"detail": "Trainer profile already exists."}, status=400)
+
+        serializer = TrainerProfileSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=user)
+            user.role = "trainer"
+            user.save()
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class GetTrainerProfile(APIView):
+    permission_classes=[IsAuthenticated]
+    def get(self, request):
+        user_id = request.user.id
+
+        try:
+            user = User.objects.select_related("trainer_profile").get(id=user_id)
+
+            if not hasattr(user, 'trainer_profile'):
+                return Response({"error": "Trainer profile not found"}, status=404)
+
+            serializer = TrainerProfileSerializer(user.trainer_profile,context={"request":request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+
+# class EditTrainerProfile(APIView):
+#     def patch(self,request):
+#         trainer_id=request.user.id
+#         trainer_details = User.objects.get()
+
+
+class TrainerDashboardAPI(APIView):
+    permission_classes=[IsAuthenticated]
+   
+    def get(self,request):
+        trainer_id=request.user.id
+        # filter courses created by this user
+        course_details=get_course_details(trainer_id)
+        enrolled_details=get_enrolled_details(trainer_id)
+        
+    
+
+
+
+        data={
+            "course_count" : len(course_details),
+            "enroll_count": len(enrolled_details)
+        }
+
+        serializer=TrainerDashboardSerializer(data)
+        return Response(serializer.data,status=status.HTTP_200_OK)
+    
+        
+    
+# ADMIN 
+
+# Fetch users 
+class ALLUsersAPI(APIView):
+    def get(self,request):
+        try:
+
+            users=User.objects.all()
+            serialized=UserSerializer(users,many=True)
+            return Response(serialized.data,status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'error':'product not found'},status=status.HTTP_404_NOT_FOUND)
+
+class UpdateUserAPI(APIView):
+    permission_classes=[IsAuthenticated]
+    def patch(self, request):
+        user_id = request.data.get('user_id')
+        try:
+            user_obj = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = UserSerializer(user_obj, data=request.data, partial=True,context={"request":request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class AdminDashboardAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Get courses from RabbitMQ
+        course_response = get_all_course()
+
+        # Extract course list from response
+        courses = course_response.get("data", [])
+        courses_count = len(courses)
+
+        # Correct role counts
+        learners_count = User.objects.filter(role="learner").count()
+        trainers_count = User.objects.filter(role="trainer").count()
+
+        # logger.info(f"Dashboard details - Learners: {learners_count}, Trainers: {trainers_count}")
+
+        data = {
+            "courses_count": courses_count,
+            "learners_count": learners_count,
+            "trainers_count": trainers_count
+        }
+
+        serializer = AdminDashboardSerializer(data)
+        return Response(serializer.data, status=status.HTTP_200_OK)

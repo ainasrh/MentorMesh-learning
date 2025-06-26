@@ -1,9 +1,8 @@
 
-
 services:
-# database
+  # database
   db:
-    image: postgres:latest   # Use the official PostgreSQL image
+    image: postgres:latest
     container_name: postgres_db
     env_file:
       - .env
@@ -12,20 +11,19 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}  
     volumes:
-      - postgres_data:/var/lib/postgresql/data  # Store data persistently
+      - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"           # Expose port for local access to the DB
+      - "5433:5432"
     networks:
       - mentormesh
-    healthcheck:  # Check DB is ready
+    healthcheck:
       test: ["CMD-SHELL", "pg_isready -U MeshAdmin -d MentorMesh"]
       interval: 5s
       timeout: 10s
       retries: 10
       start_period: 30s  
-  
-  # NGINX configure .taking nginx team providing image alpine
-  
+
+  # nginx
   nginx:
     image: nginx:alpine
     container_name: api-gateway
@@ -39,50 +37,40 @@ services:
     networks:
       - mentormesh
 
-
-# Rabbit mq configuration
-
+  # rabbitmq
   rabbitmq:
     image: rabbitmq:3-management
     ports:
       - "5672:5672"
       - "15672:15672"
-
     environment:
-    # set custom creadentials
-
       RABBITMQ_DEFAULT_USER: user
       RABBITMQ_DEFAULT_PASS: password
-
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
       timeout: 5s
-      retries: 5  
-    
+      retries: 5
     networks:
       - mentormesh
 
-
-      
-  # User Services 
+  # user service
   userservices:
     build:
       context: ./user_services
     container_name: user_services
     command: bash -c "
-        while ! pg_isready -h db -U MeshAdmin -d MentorMesh -t 1; do
-          echo 'Waiting for database...';
-          sleep 2;
-        done;
-        python manage.py migrate --noinput &&
-        python manage.py runserver 0.0.0.0:8001 &
-        python users/rabbitmq_consumer.py &
-        wait -n
-
+      while ! pg_isready -h db -U MeshAdmin -d MentorMesh -t 1; do
+        echo 'Waiting for database...';
+        sleep 2;
+      done;
+      python manage.py migrate --noinput &&
+      python manage.py runserver 0.0.0.0:8001 &
+      python users/rabbitmq_consumer.py &
+      wait -n
       "
     volumes:
-      - ./user_services:/app 
+      - ./user_services:/app
     ports:
       - "8001:8001"
     depends_on:
@@ -95,7 +83,7 @@ services:
     networks:
       - mentormesh
 
-  # Course Service
+  # course service
   course_service:
     build:
       context: ./course_service
@@ -107,7 +95,10 @@ services:
       done;
       python manage.py makemigrations --noinput &&
       python manage.py migrate --noinput &&
-      python manage.py runserver 0.0.0.0:8002
+      python manage.py runserver 0.0.0.0:8002 &
+      python course/courses_consumer.py &
+      python course/trainerEnrolled_consumer.py &
+      python course/allCourse_consumer.py 
       "
     volumes:
       - ./course_service:/app
@@ -121,16 +112,40 @@ services:
         condition: service_healthy
     env_file:
       - .env
-    networks: 
-      - mentormesh
     environment:
-    - PYTHONPATH=/app
+      - PYTHONPATH=/app
+    networks:
+      - mentormesh
 
+  # payment service
+  payment_service:
+    build:
+      context: ./payment_service
+    container_name: payment_service
+    command: bash -c "
+      python manage.py makemigrations --noinput &&
+      python manage.py migrate --noinput &&
+      python manage.py runserver 0.0.0.0:8003
+      "
+
+    ports:
+      - "8003:8003"
+    volumes:
+      - ./payment_service:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    env_file:
+      - .env
+    networks:
+      - mentormesh
 
 
 volumes:
   postgres_data:
-  
+
 networks:
   mentormesh:
     driver: bridge

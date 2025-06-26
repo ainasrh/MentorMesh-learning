@@ -12,13 +12,17 @@ logger=logging.getLogger(__name__)
 
 
 class UserSerializer(serializers.ModelSerializer):
+    avatar_url = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         exclude = ['password', 'is_superuser', 'last_login']
+        # OR alternatively:
+        # fields = '__all__'
 
-    def get_avatar(self,obj):
-        request=self.context.get('request')
-        if obj.avatar:
+    def get_avatar_url(self, obj):
+        request = self.context.get('request')
+        if request and obj.avatar:
             return request.build_absolute_uri(obj.avatar.url)
         return None
 
@@ -154,3 +158,21 @@ class chnagePasswordSerializer(serializers.Serializer):
         return user
         
 
+# TrainerProfiel
+class TrainerProfileSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = TrainerProfile
+        fields = ['user', 'experience', 'qualification', 'skills']
+
+class TrainerDashboardSerializer(serializers.Serializer):
+    course_count=serializers.IntegerField()
+    enroll_count=serializers.IntegerField()
+
+# Admin Profile
+
+class AdminDashboardSerializer(serializers.Serializer):
+    learners_count = serializers.IntegerField()
+    trainers_count =serializers.IntegerField()
+    courses_count = serializers.IntegerField()

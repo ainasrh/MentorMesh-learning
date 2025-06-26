@@ -4,6 +4,7 @@ from .serializers import *
 from rest_framework import status
 from rest_framework.generics import get_object_or_404
 import logging
+from rest_framework.permissions import IsAuthenticated
 
 from rest_framework.parsers import MultiPartParser,FormParser
 
@@ -37,6 +38,7 @@ class CreateCourseAPI(APIView):
 # Course video Create
 class CourseVideoCreateAPI(APIView):
     parser_classes = (MultiPartParser, FormParser)
+
     def post(self, request):
         logger.info(f"video request data {request.data}")
         serializer = CourseVideoSerializer(data=request.data,context={"request":request})
@@ -80,14 +82,15 @@ class GetCourseAPI(APIView):
 
 class GetCourseBasedTrainer(APIView):
     def get(self,request):
-        data=Course.objects,filter(trainer=request.id)
-        serializer=courseSerializer(data,many=True)
+        logger.info(f"{request.user}")
+        courses=Course.objects.filter(trainer=request.user.id)
+        serializer=courseSerializer(courses,many=True,context={"request":request})
         return Response(serializer.data,status=status.HTTP_200_OK)
 
 
 class UpdateCourseAPI(APIView):
     def patch(self,request,pk):
-        logger.info(request.data)
+        # logger.info(request.data)
         
         try:
             course_data=Course.objects.get(id=pk)
@@ -106,8 +109,7 @@ class UpdateCourseAPI(APIView):
             return Response({'error':"data is not valid "},status=status.HTTP_400_BAD_REQUEST)
 
 class DeleteCourseAPI(APIView):
-
-
+    
     def delete(self, request, pk):
         try:
             course = Course.objects.get(id=pk)
@@ -162,4 +164,5 @@ class UpdatePartProgressAPI(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
 
