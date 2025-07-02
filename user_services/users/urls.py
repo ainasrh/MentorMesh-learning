@@ -4,7 +4,7 @@ from .email_utils import verify_email
 
 urlpatterns = [
     path('verify-email/<uidb64>/<token>/', verify_email, name='verify_email'),
-    path('register/',RegisterApi.as_view()),
+    path('register/',RegisterApi.as_view(),name='register'),
     path('login/',LoginAPi.as_view()),
     path('logout/',LogoutApi.as_view(),name="LoginAPi"),
     path('request-otp/',RequestOtpAPI.as_view(),name='request_otp'),
@@ -17,6 +17,7 @@ urlpatterns = [
     path('gettrainerprofile/',GetTrainerProfile.as_view(),name='get-trainer-profile'),
     path('trainer/dashboard/',TrainerDashboardAPI.as_view(),name='trainer-dashboard'),
     path('update-user/',UpdateUserAPI.as_view(),name='trainer-dashboard'),
+    path('users/delete/<int:userId>/',UserDeleteApi.as_view(),name='user-delete'),
     
     # admin url
     

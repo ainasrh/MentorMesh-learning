@@ -7,11 +7,12 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
-
+from celery import shared_task
 User=get_user_model()
 
 
 #  VERIFICATION EMAIL 
+
 def send_verification_email(user,request):
     print('verification link ',user.email) 
 
@@ -27,8 +28,9 @@ def send_verification_email(user,request):
     send_mail(subject,message,settings.EMAIL_HOST_USER,[user.email])
 
 
-
 #  its set for urls when clicking url it will work this function will work
+
+
 def verify_email(request,uidb64,token):
 
 
@@ -51,7 +53,10 @@ def verify_email(request,uidb64,token):
 
 #  ## FOROT  EMAIL OTP
 
+
 def send_otp_email(email,otp):
     subject='Your Password Reset OTP'
     message =f'Use this otp to Reset your password {otp}. it Expires in 3 minutes' 
     send_mail(subject,message,settings.EMAIL_HOST_USER,[email])
+
+

@@ -4,6 +4,7 @@ import sys
 import django
 import pika
 import logging
+from course.tasks import send_enrollment_email
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -12,10 +13,9 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Set the Django settings module
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "course_service.settings")
 
-# Add the project root to sys.path
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 django.setup()
@@ -29,6 +29,9 @@ def enroll_user(user_id, course_id):
     try:
         course = Course.objects.get(id=course_id)
         Enrollment.objects.create(user=user_id, course=course)
+
+        send_enrollment_email.delay(user_id, course_id)
+
         print(f"✅ Enrolled user {user_id} in course {course_id}")
     except Course.DoesNotExist:
         print(f" Course {course_id} not found")

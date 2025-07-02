@@ -12,6 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from users.courses_publisher import get_course_details
 from users.trainerEnrolled_publisher import get_enrolled_details
 from users.allCourses_Publisher import get_all_course
+from .tasks import send_welcome_email
 
 import logging
 # Create your views here.
@@ -30,6 +31,8 @@ class RegisterApi(APIView):
             # sending email verififcation 
 
             send_verification_email(user,request)
+            send_welcome_email.delay(user.username,user.email)
+
 
 
 
@@ -273,3 +276,9 @@ class AdminDashboardAPI(APIView):
 
         serializer = AdminDashboardSerializer(data)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class UserDeleteApi(APIView):
+    def delete(self,request,userId):
+        User.objects.get(id=userId).delete()
+        return Response({"message":"user deleted succesfully"},status=status.HTTP_200_OK)
+    

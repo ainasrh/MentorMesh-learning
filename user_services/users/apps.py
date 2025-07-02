@@ -6,5 +6,6 @@ class UsersConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'users'
 
-    # def ready(self):
-    #     import users.signals
+    def ready(self):
+        from .beat_setup import setup_periodic_tasks
+        setup_periodic_tasks()

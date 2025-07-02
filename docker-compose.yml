@@ -54,6 +54,75 @@ services:
     networks:
       - mentormesh
 
+    #Redis  
+  redis:
+  # acces redis providing image
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - mentormesh
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  celery_worker:
+    build:
+      context: ./user_services
+    command: bash -c "
+      while ! pg_isready -h db -U $DB_USER -d $DB_NAME -t 1; do
+        echo 'Waiting for DB in celery_worker...';
+        sleep 2;
+      done;
+      celery -A user_services worker --loglevel=info
+      "
+      
+    env_file:
+      - .env
+    volumes:
+      - ./user_services:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+      userservices:
+        condition: service_started
+      course_service:
+        condition: service_started
+    networks:
+      - mentormesh
+
+  celery-beat:
+    build:
+      context: ./user_services
+      dockerfile: Dockerfile
+    command: bash -c "
+      echo 'Waiting for DB in celery-beat...';
+      while ! pg_isready -h db -U MeshAdmin -d MentorMesh -t 1; do
+        echo 'DB not ready...';
+        sleep 2;
+      done;
+      echo 'DB is ready, starting celery beat...';
+      celery -A user_services beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+      "
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      userservices:
+        condition: service_started
+    env_file:
+      - .env
+    volumes:
+      - ./user_services:/app
+    networks:
+      - mentormesh
+
+
+
   # user service
   userservices:
     build:
@@ -127,7 +196,6 @@ services:
       python manage.py migrate --noinput &&
       python manage.py runserver 0.0.0.0:8003
       "
-
     ports:
       - "8003:8003"
     volumes:
@@ -141,6 +209,31 @@ services:
       - .env
     networks:
       - mentormesh
+  
+  notification_service:
+    build:
+      context: ./notification_service
+    container_name: notification_service
+    command: bash -c "
+      python manage.py makemigrations --noinput &&
+      python manage.py migrate --noinput &&
+      python manage.py runserver 0.0.0.0:8004 
+      "
+    ports:
+      - "8004:8004"
+    volumes:
+      - ./notification_service:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    networks:
+      - mentormesh  
 
 
 volumes:
