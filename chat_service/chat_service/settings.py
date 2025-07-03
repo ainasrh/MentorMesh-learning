@@ -31,12 +31,19 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'chat',
+    'rest_framework',
+    'corsheaders',
+    'channels',
+    'redis'
+    
 ]
 
 MIDDLEWARE = [
@@ -66,8 +73,18 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'chat_service.wsgi.application'
 
+ASGI_APPLICATION = 'chat_service.asgi.application'
+
+# is that channel_redis library help to connect channels to redis cache
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('redis', 6379)],  
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases

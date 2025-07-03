@@ -233,7 +233,31 @@ services:
     env_file:
       - .env
     networks:
-      - mentormesh  
+      - mentormesh 
+  
+  # chat_service
+  chat_service:
+    build:
+      context: ./chat_service
+    container_name: chat_service
+    command: bash -c "
+      python manage.py makemigrations --noinput &&
+      python manage.py migrate --noinput &&
+      python manage.py runserver 0.0.0:8005
+      "
+    ports:
+      - "8005:8005"
+    volumes:
+      - ./chat_service:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    networks:
+      - mentormesh
+
+    
 
 
 volumes:
