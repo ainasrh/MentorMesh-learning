@@ -1,6 +1,6 @@
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
-from course.utils.decode_token import decode_jwt_token
+from .decode_token import decode_jwt_token
 import logging
 
 logger = logging.getLogger(__name__)

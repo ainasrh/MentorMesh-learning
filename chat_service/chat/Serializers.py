@@ -1,30 +1,39 @@
 from rest_framework import serializers
-from RabbitmqFiles.get_user_publisher import get_user_info
-from rest_framework import status
+from .models import ChatRoom,Message
+from .RabbitmqFiles.get_user_publisher import get_user_info
 
 class ChatRoomSerializer(serializers.Serializer):
     target_user_id = serializers.IntegerField()
+    room_id = serializers.UUIDField(read_only=True)
 
-    def validate(self,validation_data):
-        target_user_id = validation_data.get('target_user_id')
-
+    def validate(self, data):
+        target_user_id = data.get('target_user_id')
         if target_user_id is None:
-            raise serializers.ValidationError({"error":"target_user_id is required "},status=status.HTTP_400_BAD_REQUEST)
-        
+            raise serializers.ValidationError({"error": "target_user_id is required"})
+
         try:
-            target_user = get_user_info(target_user_id)
+            get_user_info(target_user_id)
         except:
-            raise serializers.ValidationError({"error":"user is not found in this target user id"},status=status.HTTP_404_NOT_FOUND) 
-    
-        return validation_data
-    
+            raise serializers.ValidationError({"error": "User not found"})
 
-    def save(self,validated_data):
-        target_user_id = validated_data.get('target_user_id')
-        request_user_id = self.context.get('request').user.id
-        
-        
+        return data
 
-           
-        
+    def save(self, **kwargs):
+        target_user_id = self.validated_data['target_user_id']
+        request_user_id = self.context['request'].user.id
 
+        user1, user2 = sorted([target_user_id, request_user_id])
+        room, _ = ChatRoom.objects.get_or_create(user1=user1, user2=user2)
+        return room
+
+    def to_representation(self, instance):
+        return {
+            "room_id": instance.room_id  
+        }
+
+class MessageSerializer(serializers.ModelSerializer):
+    sender = serializers.StringRelatedField()
+
+    class Meta:
+        model = Message
+        fields = ['id', 'sender', 'content', 'timestamp']
