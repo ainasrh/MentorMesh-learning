@@ -11,6 +11,7 @@ urlpatterns =[
     path('courses/<int:pk>/',GetCourseAPI.as_view(),name='course-detail'),
     path('update/<int:pk>/',UpdateCourseAPI.as_view(),name='update-course'),
     path('enroll/',EnrollCourseAPI.as_view(),name='enroll-course'),
+    path('getenrolled/',GetEnrolledCoursesAPI.as_view(),name='enrolled-courses'),
     path('progress/<int:video_id>/',UpdatePartProgressAPI.as_view(),name='update-progress'),
     path('progress/',UpdatePartProgressAPI.as_view(),name='get-progress'),
     path('trending-course/',TrendingCourseAPI.as_view(),name='trending-course'),    

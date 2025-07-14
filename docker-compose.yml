@@ -140,6 +140,7 @@ services:
       "
     volumes:
       - ./user_services:/app
+      - ./media:/app/media
     ports:
       - "8001:8001"
     depends_on:
@@ -252,6 +253,19 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    env_file:
+      - .env
+    networks:
+      - mentormesh
+  
+  chatbot_service:
+    build:
+      context: ./chatbot_service
+    container_name: chatbot_service
+    ports:
+      - "8006:8006"
+    volumes:
+      - ./chatbot_service:/app
     env_file:
       - .env
     networks:

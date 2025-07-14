@@ -1,6 +1,8 @@
 from django.urls import path
 from .views import *
 from .email_utils import verify_email
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('verify-email/<uidb64>/<token>/', verify_email, name='verify_email'),
@@ -24,4 +26,4 @@ urlpatterns = [
     path('admin-dashboard/',AdminDashboardAPI.as_view(),name='admin-dashboard'),
 
 
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

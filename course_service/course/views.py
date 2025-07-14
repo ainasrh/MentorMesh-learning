@@ -139,6 +139,16 @@ class EnrollCourseAPI(APIView):
             return Response(serialized.data,status=status.HTTP_201_CREATED)
         return Response(serialized.errors,status=status.HTTP_400_BAD_REQUEST)
     
+
+class GetEnrolledCoursesAPI(APIView):
+    def get(self,request):
+        user_id = request.user.id
+        enrolled_course = Enrollment.objects.filter(user=user_id)
+        serializer = EnrollmentSerializer(enrolled_course, many = True)
+        return Response(serializer.data,status=status.HTTP_200_OK)
+    
+
+    
 class UpdatePartProgressAPI(APIView):
     def get(self,requst,video_id=None):
         
